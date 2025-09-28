@@ -2,6 +2,8 @@
 
 TalentFlow is a front‑end React application that simulates a lightweight hiring platform. It focuses on rich client behavior, local persistence, and realistic API interactions via a mocked network layer. There is no real backend; all data persists locally.
 
+## Live demo: https://talentflow-a-mini-hiring-platform.netlify.app/
+
 ## Tech Stack
 
 - **Framework**: React 19 + Vite 7
