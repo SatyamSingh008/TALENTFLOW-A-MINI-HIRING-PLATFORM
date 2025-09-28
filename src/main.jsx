@@ -3,16 +3,9 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
-// Initialize MSW and seed data
+// Initialize MSW and seed data (enabled in all modes if SW file is present)
 async function enableMocking() {
-  if (process.env.NODE_ENV !== 'development') {
-    return;
-  }
-
   try {
-    // Ensure the service worker file is reachable before attempting to start MSW.
-    // If the dev server isn't running or the file isn't served, this prevents
-    // MSW from attempting passthroughs that will fail with "Failed to fetch".
     const swUrl = '/mockServiceWorker.js';
     let swAvailable = false;
     try {
@@ -24,51 +17,47 @@ async function enableMocking() {
 
     if (!swAvailable) {
       console.warn(`MSW service worker not available at ${swUrl}. Skipping MSW startup.`);
-    } else {
-      const { worker } = await import('./mocks/browser.js');
-      const { seedData } = await import('./db/database.js');
-
-      // Start MSW worker with a less aggressive unhandled-request behavior so
-      // passthrough network errors do not surface as noisy uncaught exceptions.
-      await worker.start({
-        onUnhandledRequest: 'warn',
-        serviceWorker: {
-          url: swUrl
-        }
-      });
-
-      console.log('🚀 MSW started successfully');
-
-      // Seed the database
-      await seedData();
-
-      console.log('📊 Database seeded successfully');
-
-      // Test if data was seeded
-      const { dbHelpers } = await import('./db/database.js');
-      const jobs = await dbHelpers.getJobs();
-      const candidates = await dbHelpers.getCandidates();
-      console.log(`✅ Seeded ${jobs.length} jobs and ${candidates.length} candidates`);
+      return;
     }
+
+    const { worker } = await import('./mocks/browser.js');
+    const { seedData } = await import('./db/database.js');
+
+    await worker.start({
+      onUnhandledRequest: 'warn',
+      serviceWorker: { url: swUrl }
+    });
+
+    console.log('🚀 MSW started successfully (mode:', import.meta.env.MODE, ')');
+
+    // Seed the database only once per browser (avoid wiping user data)
+    const SEED_FLAG_KEY = 'tf_seed_v1';
+    if (!localStorage.getItem(SEED_FLAG_KEY)) {
+      await seedData();
+      localStorage.setItem(SEED_FLAG_KEY, '1');
+      console.log('📊 Database seeded successfully');
+    } else {
+      console.log('⏭️  Seeding skipped (already seeded)');
+    }
+
+    // Sanity log
+    const { dbHelpers } = await import('./db/database.js');
+    const jobs = await dbHelpers.getJobs();
+    const candidates = await dbHelpers.getCandidates();
+    console.log(`✅ Seeded ${jobs.length} jobs and ${candidates.length} candidates`);
   } catch (error) {
     console.error('Failed to initialize MSW:', error);
-    console.error('Error details:', error.message);
+    console.error('Error details:', error?.message);
     // Continue without MSW for now
   }
 }
 
-enableMocking().then(() => {
-  createRoot(document.getElementById('root')).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  )
-}).catch((error) => {
-  console.error('Failed to start app:', error);
-  // Fallback: render app without MSW
-  createRoot(document.getElementById('root')).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  )
-});
+enableMocking()
+  .catch((e) => console.warn('MSW init warning:', e))
+  .finally(() => {
+    createRoot(document.getElementById('root')).render(
+      <StrictMode>
+        <App />
+      </StrictMode>,
+    )
+  });
