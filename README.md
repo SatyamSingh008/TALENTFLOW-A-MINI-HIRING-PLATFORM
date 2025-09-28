@@ -87,11 +87,6 @@ npm run preview
 ```
 Build artifacts output to `dist/`.
 
-### Scripts
-- `dev` – Start Vite dev server
-- `build` – Production build to `dist/`
-- `preview` – Preview the build locally
-- `lint` – Lint the codebase
 
 ## Project Structure (high level)
 
@@ -99,24 +94,7 @@ Build artifacts output to `dist/`.
 - `public/` – Static assets and MSW worker (`mockServiceWorker.js`), SPA redirects (`_redirects`)
 - Config at repo root: Vite, Tailwind, PostCSS, ESLint
 
-## Deployment (GitHub → Netlify)
 
-1. Create a GitHub repository and push this project.
-2. Netlify → Add new site → Import an existing project.
-3. Build settings:
-   - Build command: `npm run build`
-   - Publish directory: `dist`
-4. SPA routing is handled via `public/_redirects`:
-   ```
-   /*    /index.html   200
-   ```
-5. If needed, set `NODE_VERSION=18` in Site settings → Build & deploy → Environment.
-
-## Troubleshooting
-
-- **Refresh/deep‑link 404s**: Ensure `public/_redirects` is present and published.
-- **Optimistic updates rollback**: Expected when MSW injects write errors; verify UI resumes consistent state.
-- **Large lists**: Virtualization is enabled for candidate lists; verify smooth scrolling in production builds.
 - **Build failures**: Confirm Node 18+ locally and on Netlify.
 
 ## License
